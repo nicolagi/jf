@@ -1,0 +1,10 @@
+{
+	"timeout": 30,
+	"exclude": [ ".git" ],
+	"rules": [ {
+		"include": [ "\\.go$" ],
+		"run": [ {
+			"script": "go test && go test -bench=. && go vet && errcheck && staticcheck"
+		} ]
+	} ]
+}
