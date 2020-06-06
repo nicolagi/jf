@@ -1,7 +1,7 @@
 // Command jf transforms a JSON element into a sequence of path-value
 // pairs. Some examples follow. Flattening a single element:
 //
-// 	; curl -sL https://swapi.dev/api/people/2/ | jflatten
+// 	; curl -sL https://swapi.dev/api/people/2/ | jf
 // 	.	{}
 // 	."name"	"C-3PO"
 // 	."height"	"167"
@@ -29,14 +29,14 @@
 //
 // By default only one element is accepted:
 //
-// 	; { curl -sL https://swapi.dev/api/people/1/ ; curl -sL https://swapi.dev/api/people/2/ } | jflatten
-// 	...
+// 	; { curl -sL https://swapi.dev/api/people/1/ ; curl -sL https://swapi.dev/api/people/2/ } | jf
 // 	2020/06/01 18:56:21 main: expected to flatten one value and get EOF, got: {
+// 	<output for first JSON element>
 //
 // With -m, jflatten will flatten many JSON elements but paths may be
 // duplicated as a result:
 //
-// 	; { curl -sL https://swapi.dev/api/people/1/ ; curl -sL https://swapi.dev/api/people/2/ } | jflatten -m | sort
+// 	; { curl -sL https://swapi.dev/api/people/1/ ; curl -sL https://swapi.dev/api/people/2/ } | jf -m | sort
 // 	.	{}
 // 	.	{}
 // 	."birth_year"	"112BBY"
@@ -89,6 +89,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -98,10 +99,24 @@ import (
 
 func main() {
 	many := flag.Bool("m", false, "decode many values")
+	unbuffered := flag.Bool("u", false, "unbuffered (print output line by line)")
 	flag.Parse()
 	var opts []option
 	if *many {
 		opts = append(opts, acceptMany)
+	}
+	var out io.Writer
+	if *unbuffered {
+		out = os.Stdout
+	} else {
+		bio := bufio.NewWriter(os.Stdout)
+		defer func() {
+			if err := bio.Flush(); err != nil {
+				// Is standard error going to work any better?
+				log.Printf("Could not flush output: %v", err)
+			}
+		}()
+		out = bio
 	}
 	f := newFlattener(os.Stdin, opts...)
 	for {
@@ -110,8 +125,13 @@ func main() {
 			break
 		}
 		if err != nil {
-			log.Fatalf("jf: %v", err)
+			log.Printf("jf: %v", err)
+			break
 		}
-		fmt.Printf("%s\t%s\n", path, value)
+		_, err = fmt.Fprintf(out, "%s\t%s\n", path, value)
+		if err != nil {
+			log.Printf("Could not write to output: %v", err)
+			break
+		}
 	}
 }
