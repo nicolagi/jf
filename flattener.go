@@ -11,8 +11,6 @@ type pair struct {
 	err   error
 }
 
-var zeroPair = pair{}
-
 type option func(*flattener)
 
 func acceptMany(f *flattener) {
@@ -75,46 +73,45 @@ type flattener struct {
 	l      *lexer
 	last   item // Last item got from the lexer.
 	repeat bool // Whether fetching the next item returns last or reads a new one from the lexer.
-	pairs  chan pair
 	many   bool // Decode only one value or many?
+	cb     func(path string, value string, err error)
 }
 
 func newFlattener(r io.Reader, opts ...option) *flattener {
 	f := &flattener{
-		l:     newLexer(r),
-		pairs: make(chan pair),
+		l: newLexer(r),
 	}
 	for _, o := range opts {
 		o(f)
 	}
-	go func() {
-		for {
-			// Don't care for the return value here, that's only used to
-			// interrupt the recursive descent. Any error will get to the
-			// consumer via NextPair.
-			_ = f.flattenValue(".")
-			if it := f.nextItem(); it.typ == itemEOF {
-				break
-			} else if !f.many {
-				_ = f.errorf("expected to flatten one value and get EOF, got: %v", it.val)
-				break
-			} else {
-				f.backup()
-			}
-		}
-		close(f.pairs)
-	}()
 	return f
 }
 
-// nextPair can be used to iterate over the flattened properties.
-// The error is io.EOF when there are no more properties.
-func (f *flattener) nextPair() (path string, value string, err error) {
-	p := <-f.pairs
-	if p == zeroPair {
-		return "", "", io.EOF
+func (f *flattener) run(cb func(path string, value string, err error)) {
+	f.cb = cb
+	for {
+		// Don't care for the return value here, that's only used to
+		// interrupt the recursive descent. Any error will get to the
+		// consumer via NextPair.
+		_ = f.flattenValue(".")
+		if it := f.nextItem(); it.typ == itemEOF {
+			break
+		} else if !f.many {
+			_ = f.errorf("expected to flatten one value and get EOF, got: %v", it.val)
+			break
+		} else {
+			f.backup()
+		}
 	}
-	return p.path, p.value, p.err
+
+}
+
+// For convenience in unit tests.
+func (f *flattener) collect() (output []pair) {
+	f.run(func(path string, value string, err error) {
+		output = append(output, pair{path: path, value: value, err: err})
+	})
+	return
 }
 
 func (f *flattener) nextItem() item {
@@ -132,7 +129,7 @@ func (f *flattener) backup() {
 }
 
 func (f *flattener) errorf(format string, a ...interface{}) (errored bool) {
-	f.pairs <- pair{err: fmt.Errorf(format, a...)}
+	f.cb("", "", fmt.Errorf(format, a...))
 	return true
 }
 
@@ -142,14 +139,14 @@ func (f *flattener) flattenValue(path string) (errored bool) {
 		return f.errorf("flattenValue: lexer error: %v", it.val)
 	case itemLeftCurlyBrace:
 		f.backup()
-		f.pairs <- pair{path: path, value: `{}`}
+		f.cb(path, "{}", nil)
 		return f.flattenObject(path)
 	case itemLeftBracket:
 		f.backup()
-		f.pairs <- pair{path: path, value: `[]`}
+		f.cb(path, "[]", nil)
 		return f.flattenArray(path)
 	case itemQuotedString, itemUnquotedString:
-		f.pairs <- pair{path: path, value: it.val}
+		f.cb(path, it.val, nil)
 		return false
 	default:
 		return f.errorf("flattenValue: unexpected lexeme: %v", it)

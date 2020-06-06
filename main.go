@@ -119,19 +119,15 @@ func main() {
 		out = bio
 	}
 	f := newFlattener(os.Stdin, opts...)
-	for {
-		path, value, err := f.nextPair()
-		if err == io.EOF {
-			break
-		}
+	f.run(func(path string, value string, err error) {
 		if err != nil {
 			log.Printf("jf: %v", err)
-			break
+			return
 		}
 		_, err = fmt.Fprintf(out, "%s\t%s\n", path, value)
 		if err != nil {
 			log.Printf("Could not write to output: %v", err)
-			break
+			return
 		}
-	}
+	})
 }

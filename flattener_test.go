@@ -23,27 +23,30 @@ type flattenerTest struct {
 
 func (tt *flattenerTest) run(t *testing.T, f *flattener) {
 	t.Helper()
-	for _, p := range tt.output {
-		path, value, err := f.nextPair()
-		if path != p.path {
-			t.Errorf("got %s, want %s for path", path, p.path)
+	output := f.collect()
+	if got, want := len(output), len(tt.output); got != want {
+		t.Errorf("got %d, want %d pairs", got, want)
+	}
+	for i, expected := range tt.output {
+		if i >= len(output) {
+			break
 		}
-		if value != p.value {
-			t.Errorf("got %s, want %s for value", value, p.value)
+		actual := output[i]
+		if actual.path != expected.path {
+			t.Errorf("got %s, want %s for path", actual.path, expected.path)
 		}
-		if p.err != nil {
-			if err == nil {
-				t.Errorf("got nil, want %q", p.err.Error())
-			} else if got, want := err.Error(), p.err.Error(); got != want {
+		if actual.value != expected.value {
+			t.Errorf("got %s, want %s for value", actual.value, expected.value)
+		}
+		if expected.err != nil {
+			if actual.err == nil {
+				t.Errorf("got nil, want %q", expected.err.Error())
+			} else if got, want := actual.err.Error(), expected.err.Error(); got != want {
 				t.Errorf("got %q, want %q", got, want)
 			}
-		} else if err != nil {
-			t.Error(err)
+		} else if actual.err != nil {
+			t.Errorf("got %v, want nil", actual.err)
 		}
-	}
-	path, value, err := f.nextPair()
-	if path != "" || value != "" || err != io.EOF {
-		t.Errorf("expended EOF pair, got path=%q value=%q and err=%v", path, value, err)
 	}
 }
 
@@ -278,16 +281,15 @@ func TestFlattenerConformance(t *testing.T) {
 	f := func(input jsonValue) bool {
 		flattener := newFlattener(strings.NewReader(string(input)))
 		var pairs []string
-		for {
-			path, value, err := flattener.nextPair()
-			if err == io.EOF {
+		for _, p := range flattener.collect() {
+			if p.err == io.EOF {
 				break
 			}
-			if err != nil {
-				t.Fatal(err)
+			if p.err != nil {
+				t.Fatal(p.err)
 				return false
 			}
-			pairs = append(pairs, fmt.Sprintf("%s\t%s", path, value))
+			pairs = append(pairs, fmt.Sprintf("%s\t%s", p.path, p.value))
 		}
 		sort.Strings(pairs)
 		var referencePairs []string
@@ -337,15 +339,11 @@ const sampleValue = `{
 func BenchmarkFlattener(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		f := newFlattener(strings.NewReader(sampleValue))
-		for {
-			_, _, err := f.nextPair()
-			if err == io.EOF {
-				break
-			}
+		f.run(func(_ string, _ string, err error) {
 			if err != nil {
 				b.Fatal(err)
 			}
-		}
+		})
 	}
 }
 
