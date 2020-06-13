@@ -1,91 +1,88 @@
 // Command jf transforms a JSON element into a sequence of path-value
 // pairs. Some examples follow. Flattening a single element:
 //
-// 	; curl -sL https://swapi.dev/api/people/2/ | jf
+// 	; curl -sL https://api.spacexdata.com/v3/capsules/C101 | jf
 // 	.	{}
-// 	."name"	"C-3PO"
-// 	."height"	"167"
-// 	."mass"	"75"
-// 	."hair_color"	"n/a"
-// 	."skin_color"	"gold"
-// 	."eye_color"	"yellow"
-// 	."birth_year"	"112BBY"
-// 	."gender"	"n/a"
-// 	."homeworld"	"http://swapi.dev/api/planets/1/"
-// 	."films"	[]
-// 	."films"[0]	"http://swapi.dev/api/films/1/"
-// 	."films"[1]	"http://swapi.dev/api/films/2/"
-// 	."films"[2]	"http://swapi.dev/api/films/3/"
-// 	."films"[3]	"http://swapi.dev/api/films/4/"
-// 	."films"[4]	"http://swapi.dev/api/films/5/"
-// 	."films"[5]	"http://swapi.dev/api/films/6/"
-// 	."species"	[]
-// 	."species"[0]	"http://swapi.dev/api/species/2/"
-// 	."vehicles"	[]
-// 	."starships"	[]
-// 	."created"	"2014-12-10T15:10:51.357000Z"
-// 	."edited"	"2014-12-20T21:17:50.309000Z"
-// 	."url"	"http://swapi.dev/api/people/2/"
+// 	."capsule_serial"	"C101"
+// 	."capsule_id"	"dragon1"
+// 	."status"	"retired"
+// 	."original_launch"	"2010-12-08T15:43:00.000Z"
+// 	."original_launch_unix"	1291822980
+// 	."missions"	[]
+// 	."missions"[0]	{}
+// 	."missions"[0]."name"	"COTS 1"
+// 	."missions"[0]."flight"	7
+// 	."landings"	1
+// 	."type"	"Dragon 1.0"
+// 	."details"	"Reentered after three weeks in orbit"
+// 	."reuse_count"	0
 //
 // By default only one element is accepted:
 //
-// 	; { curl -sL https://swapi.dev/api/people/1/ ; curl -sL https://swapi.dev/api/people/2/ } | jf
+// 	; { curl -sL https://api.spacexdata.com/v3/capsules/C101 ; curl -sL https://api.spacexdata.com/v3/capsules/C102 } | jf
 // 	2020/06/01 18:56:21 main: expected to flatten one value and get EOF, got: {
 // 	<output for first JSON element>
 //
 // With -m, jflatten will flatten many JSON elements but paths may be
 // duplicated as a result:
 //
-// 	; { curl -sL https://swapi.dev/api/people/1/ ; curl -sL https://swapi.dev/api/people/2/ } | jf -m | sort
+// 	; { curl -sL https://api.spacexdata.com/v3/capsules/C101 ; curl -sL https://api.spacexdata.com/v3/capsules/C102 } | jf -m | sort
 // 	.	{}
 // 	.	{}
-// 	."birth_year"	"112BBY"
-// 	."birth_year"	"19BBY"
-// 	."created"	"2014-12-09T13:50:51.644000Z"
-// 	."created"	"2014-12-10T15:10:51.357000Z"
-// 	."edited"	"2014-12-20T21:17:50.309000Z"
-// 	."edited"	"2014-12-20T21:17:56.891000Z"
-// 	."eye_color"	"blue"
-// 	."eye_color"	"yellow"
-// 	."films"	[]
-// 	."films"	[]
-// 	."films"[0]	"http://swapi.dev/api/films/1/"
-// 	."films"[0]	"http://swapi.dev/api/films/1/"
-// 	."films"[1]	"http://swapi.dev/api/films/2/"
-// 	."films"[1]	"http://swapi.dev/api/films/2/"
-// 	."films"[2]	"http://swapi.dev/api/films/3/"
-// 	."films"[2]	"http://swapi.dev/api/films/3/"
-// 	."films"[3]	"http://swapi.dev/api/films/4/"
-// 	."films"[3]	"http://swapi.dev/api/films/6/"
-// 	."films"[4]	"http://swapi.dev/api/films/5/"
-// 	."films"[5]	"http://swapi.dev/api/films/6/"
-// 	."gender"	"male"
-// 	."gender"	"n/a"
-// 	."hair_color"	"blond"
-// 	."hair_color"	"n/a"
-// 	."height"	"167"
-// 	."height"	"172"
-// 	."homeworld"	"http://swapi.dev/api/planets/1/"
-// 	."homeworld"	"http://swapi.dev/api/planets/1/"
-// 	."mass"	"75"
-// 	."mass"	"77"
-// 	."name"	"C-3PO"
-// 	."name"	"Luke Skywalker"
-// 	."skin_color"	"fair"
-// 	."skin_color"	"gold"
-// 	."species"	[]
-// 	."species"	[]
-// 	."species"[0]	"http://swapi.dev/api/species/2/"
-// 	."starships"	[]
-// 	."starships"	[]
-// 	."starships"[0]	"http://swapi.dev/api/starships/12/"
-// 	."starships"[1]	"http://swapi.dev/api/starships/22/"
-// 	."url"	"http://swapi.dev/api/people/1/"
-// 	."url"	"http://swapi.dev/api/people/2/"
-// 	."vehicles"	[]
-// 	."vehicles"	[]
-// 	."vehicles"[0]	"http://swapi.dev/api/vehicles/14/"
-// 	."vehicles"[1]	"http://swapi.dev/api/vehicles/30/"
+// 	."capsule_id"	"dragon1"
+// 	."capsule_id"	"dragon1"
+// 	."capsule_serial"	"C101"
+// 	."capsule_serial"	"C102"
+// 	."details"	"First Dragon spacecraft"
+// 	."details"	"Reentered after three weeks in orbit"
+// 	."landings"	1
+// 	."landings"	1
+// 	."missions"	[]
+// 	."missions"	[]
+// 	."missions"[0]	{}
+// 	."missions"[0]	{}
+// 	."missions"[0]."flight"	7
+// 	."missions"[0]."flight"	8
+// 	."missions"[0]."name"	"COTS 1"
+// 	."missions"[0]."name"	"COTS 2"
+// 	."original_launch"	"2010-12-08T15:43:00.000Z"
+// 	."original_launch"	"2012-05-22T07:44:00.000Z"
+// 	."original_launch_unix"	1291822980
+// 	."original_launch_unix"	1335944640
+// 	."reuse_count"	0
+// 	."reuse_count"	0
+// 	."status"	"retired"
+// 	."status"	"retired"
+// 	."type"	"Dragon 1.0"
+// 	."type"	"Dragon 1.0"
+//
+// It's easy to compose jf with the system diff to diff two JSON
+// documents.
+//
+// 	bash-5.0$ diff -u <(curl -sL https://api.spacexdata.com/v3/capsules/C101 | jf) <(curl -sL https://api.spacexdata.com/v3/capsules/C102 | jf)
+// 	--- /dev/fd/63	2020-05-18 00:00:01.743253402 +0100
+// 	+++ /dev/fd/62	2020-05-18 00:00:01.743236779 +0100
+// 	@@ -1,14 +1,14 @@
+// 	 .	{}
+// 	-."capsule_serial"	"C101"
+// 	+."capsule_serial"	"C102"
+// 	 ."capsule_id"	"dragon1"
+// 	 ."status"	"retired"
+// 	-."original_launch"	"2010-12-08T15:43:00.000Z"
+// 	-."original_launch_unix"	1291822980
+// 	+."original_launch"	"2012-05-22T07:44:00.000Z"
+// 	+."original_launch_unix"	1335944640
+// 	 ."missions"	[]
+// 	 ."missions"[0]	{}
+// 	-."missions"[0]."name"	"COTS 1"
+// 	-."missions"[0]."flight"	7
+// 	+."missions"[0]."name"	"COTS 2"
+// 	+."missions"[0]."flight"	8
+// 	 ."landings"	1
+// 	 ."type"	"Dragon 1.0"
+// 	-."details"	"Reentered after three weeks in orbit"
+// 	+."details"	"First Dragon spacecraft"
+// 	 ."reuse_count"	0
 package main
 
 import (

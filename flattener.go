@@ -20,31 +20,20 @@ func acceptMany(f *flattener) {
 // flattener is a recursive-descent parser that produces, instead of
 // a parse tree, a sequence of pathname-value pairs. Example:
 //
-// 	; curl -sL https://swapi.dev/api/people/2/ | jf
-// 	.	{}
-// 	."name"	"C-3PO"
-// 	."height"	"167"
-// 	."mass"	"75"
-// 	."hair_color"	"n/a"
-// 	."skin_color"	"gold"
-// 	."eye_color"	"yellow"
-// 	."birth_year"	"112BBY"
-// 	."gender"	"n/a"
-// 	."homeworld"	"http://swapi.dev/api/planets/1/"
-// 	."films"	[]
-// 	."films"[0]	"http://swapi.dev/api/films/1/"
-// 	."films"[1]	"http://swapi.dev/api/films/2/"
-// 	."films"[2]	"http://swapi.dev/api/films/3/"
-// 	."films"[3]	"http://swapi.dev/api/films/4/"
-// 	."films"[4]	"http://swapi.dev/api/films/5/"
-// 	."films"[5]	"http://swapi.dev/api/films/6/"
-// 	."species"	[]
-// 	."species"[0]	"http://swapi.dev/api/species/2/"
-// 	."vehicles"	[]
-// 	."starships"	[]
-// 	."created"	"2014-12-10T15:10:51.357000Z"
-// 	."edited"	"2014-12-20T21:17:50.309000Z"
-// 	."url"	"http://swapi.dev/api/people/2/"
+// 	; curl -sL https://api.spacexdata.com/v3/launches/latest | jf | grep links
+// 	."links"	{}
+// 	."links"."mission_patch"	"https://images2.imgbox.com/d2/3b/bQaWiil0_o.png"
+// 	."links"."mission_patch_small"	"https://images2.imgbox.com/9a/96/nLppz9HW_o.png"
+// 	."links"."reddit_campaign"	"https://www.reddit.com/r/spacex/comments/gwbr4t/starlink8_launch_campaign_thread/"
+// 	."links"."reddit_launch"	"https://www.reddit.com/r/spacex/comments/h7gqlc/rspacex_starlink_8_official_launch_discussion/"
+// 	."links"."reddit_recovery"	null
+// 	."links"."reddit_media"	"https://www.reddit.com/r/spacex/comments/h842qk/rspacex_starlink8_media_thread_photographer/"
+// 	."links"."presskit"	null
+// 	."links"."article_link"	null
+// 	."links"."wikipedia"	"https://en.wikipedia.org/wiki/Starlink"
+// 	."links"."video_link"	"https://youtu.be/8riKQXChPGg"
+// 	."links"."youtube_id"	"8riKQXChPGg"
+// 	."links"."flickr_images"	[]
 //
 // Be sure to consume all pairs using nextPair until io.EOF in
 // order not to leak a goroutine.
