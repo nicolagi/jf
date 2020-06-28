@@ -2,6 +2,9 @@
 #include <libc.h>
 #include <bio.h>
 
+Rune *key;
+int keycap = 1;
+
 Rune *path;
 int pathcap = 1;
 
@@ -9,10 +12,6 @@ int *pends;
 int pend = 0;
 int pendscap = 1;
 int nextpend = 0;
-
-/* TODO: Keys are silently clipped if they get too long. */
-#define MAXKEYLEN 64
-Rune key[MAXKEYLEN];
 
 /* Adds an object key if not nil, otherwise an array index. */
 void
@@ -81,15 +80,15 @@ void parsevalue(void);
 void parsequoted(void);
 
 /* Very similar to parse quoted string, but stores in a buffer. */
-/* TODO: Too long keys are silently truncated. */
 void
-parsekey(Rune *s, int len)
+parsekey()
 {
-	Rune *p = s;
-	Rune *e = s + len;
+	Rune *p = key;
+	Rune *e = key+keycap;
 	long r;
 	expect('"');
 	*p++ = '"';
+retry:
 	while (p < e) {
 		r = Bgetrune(&bin);
 		if (r == Beof)
@@ -105,6 +104,15 @@ parsekey(Rune *s, int len)
 			return;
 		}
 	}
+	// We've exhausted the space.
+	Rune *newkey = malloc(2*keycap*sizeof(Rune));
+	memcpy(newkey, key, keycap*sizeof(Rune));
+	free(key);
+	key = newkey;
+	p = key + keycap;
+	keycap *= 2;
+	e = newkey + keycap;
+	goto retry;
 }
 
 void
@@ -119,7 +127,7 @@ parseobject(void)
 		Bungetrune(&bin);
 again:
 	ignorespace();
-	parsekey(key, MAXKEYLEN);
+	parsekey();
 	ignorespace();
 	expect(':');
 	ignorespace();
@@ -223,6 +231,7 @@ parsevalue(void)
 void
 main(void)
 {
+	key = malloc(sizeof(Rune));
 	path = malloc(sizeof(Rune));
 	pends = malloc(sizeof(int));
 	Binit(&bin, 0, OREAD);
