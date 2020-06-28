@@ -4,20 +4,31 @@
 
 #define MAXPATHLEN 4096
 #define MAXKEYLEN 256
-#define MAXNESTING 64
 
 /* TODO: Paths are silently clipped if they get too long. */
 Rune path[MAXPATHLEN];
+int *pends;
 int pend = 0;
-int pends[MAXNESTING];
+int pendscap = 1;
 int nextpend = 0;
 Rune key[MAXKEYLEN];
 
 void
+ensurependsspace()
+{
+	if (nextpend == pendscap) {
+		int *newpends = malloc(2*pendscap*sizeof(int));
+		memcpy(newpends, pends, pendscap*sizeof(int));
+		free(pends);
+		pends = newpends;
+		pendscap *= 2;
+	}
+}
+
+void
 pathappendkey(Rune *s)
 {
-	if (nextpend == MAXNESTING-1)
-		sysfatal("too much nesting");
+	ensurependsspace();
 	pends[nextpend++] = pend;
 	if (pend == 1)
 		pend += runesnprint(&path[pend], MAXPATHLEN-pend, "%S", s);
@@ -28,8 +39,7 @@ pathappendkey(Rune *s)
 void
 pathappendindex(int i)
 {
-	if (nextpend == MAXNESTING-1)
-		sysfatal("too much nesting");
+	ensurependsspace();
 	pends[nextpend++] = pend;
 	pend += runesnprint(&path[pend], MAXPATHLEN-pend, "[%d]", i);
 }
@@ -213,6 +223,7 @@ parsevalue(void)
 void
 main(void)
 {
+	pends = malloc(sizeof(int));
 	Binit(&bin, 0, OREAD);
 	Binit(&bout, 1, OWRITE);
 	pathappendkey(L"");
