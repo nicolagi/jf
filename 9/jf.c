@@ -11,6 +11,7 @@ Rune path[MAXPATHLEN];
 int pend = 0;
 int pends[MAXNESTING];
 int nextpend = 0;
+Rune key[MAXKEYLEN];
 
 void
 pathappendkey(Rune *s)
@@ -106,7 +107,6 @@ parseobject(void)
 		return;
 	else
 		Bungetrune(&bin);
-	Rune key[MAXKEYLEN];
 again:
 	ignorespace();
 	parsekey(key, MAXKEYLEN);
