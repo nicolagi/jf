@@ -2,19 +2,21 @@
 #include <libc.h>
 #include <bio.h>
 
-#define MAXPATHLEN 4096
-#define MAXKEYLEN 256
+Rune *path;
+int pathcap = 1;
 
-/* TODO: Paths are silently clipped if they get too long. */
-Rune path[MAXPATHLEN];
 int *pends;
 int pend = 0;
 int pendscap = 1;
 int nextpend = 0;
+
+/* TODO: Keys are silently clipped if they get too long. */
+#define MAXKEYLEN 64
 Rune key[MAXKEYLEN];
 
+/* Adds an object key if not nil, otherwise an array index. */
 void
-ensurependsspace()
+pathappend(Rune *s, int i)
 {
 	if (nextpend == pendscap) {
 		int *newpends = malloc(2*pendscap*sizeof(int));
@@ -23,25 +25,23 @@ ensurependsspace()
 		pends = newpends;
 		pendscap *= 2;
 	}
-}
-
-void
-pathappendkey(Rune *s)
-{
-	ensurependsspace();
 	pends[nextpend++] = pend;
-	if (pend == 1)
-		pend += runesnprint(&path[pend], MAXPATHLEN-pend, "%S", s);
+	int n;
+retry:
+	if (s != nil)
+		n = runesnprint(&path[pend], pathcap-pend, pend == 1 ? "%S" : ".%S", s);
 	else
-		pend += runesnprint(&path[pend], MAXPATHLEN-pend, ".%S", s);
-}
-
-void
-pathappendindex(int i)
-{
-	ensurependsspace();
-	pends[nextpend++] = pend;
-	pend += runesnprint(&path[pend], MAXPATHLEN-pend, "[%d]", i);
+		n = runesnprint(&path[pend], pathcap-pend, "[%d]", i);
+	pend += n;
+	if (pend == pathcap-1) {
+		Rune *newpath = malloc(2*pathcap*sizeof(Rune));
+		memcpy(newpath, path, pend*sizeof(Rune));
+		free(path);
+		path = newpath;
+		pathcap *= 2;
+		pend -= n;
+		goto retry;
+	}
 }
 
 void
@@ -123,7 +123,7 @@ again:
 	ignorespace();
 	expect(':');
 	ignorespace();
-	pathappendkey(key);
+	pathappend(key, 0);
 	parsevalue();
 	pathbackup();
 	ignorespace();
@@ -149,7 +149,7 @@ parsearray(void)
 again:
 	i++;
 	ignorespace();
-	pathappendindex(i);
+	pathappend(nil, i);
 	parsevalue();
 	pathbackup();
 	ignorespace();
@@ -223,10 +223,11 @@ parsevalue(void)
 void
 main(void)
 {
+	path = malloc(sizeof(Rune));
 	pends = malloc(sizeof(int));
 	Binit(&bin, 0, OREAD);
 	Binit(&bout, 1, OWRITE);
-	pathappendkey(L"");
+	pathappend(L"", 0);
 	parsevalue();
 	pathbackup();
 	ignorespace();
