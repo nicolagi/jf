@@ -1,0 +1,12 @@
+<|rc <mkfile.rc
+
+build:V:	$O.jf
+
+clean:V:
+	rm *.[5o] [5o].*
+
+%.$O:	%.c
+	$CC $CFLAGS $stem.c
+
+$O.%:	%.$O
+	$LD -o $O.$stem $stem.$O

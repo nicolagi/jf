@@ -1,0 +1,15 @@
+# An rc script that works in Plan 9 and in p9p as well,
+# to include proper mkfiles.
+if (! ~ $#objtype 0) {
+	cat /$objtype/mkfile
+	echo install:V:	build
+	echo '	cp $O.jf $home/bin/$objtype/jf9'
+}
+if not status=''
+if (! ~ $#PLAN9 0) {
+	cat $PLAN9/src/mkhdr
+	echo 'MKSHELL=rc'
+	echo install:V:	build
+	echo '	cp $O.jf $PLAN9/bin/jf9'
+}
+if not status=''

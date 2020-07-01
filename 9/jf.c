@@ -44,7 +44,7 @@ retry:
 }
 
 void
-pathbackup()
+pathbackup(void)
 {
 	if (nextpend == 0)
 		sysfatal("unbalanced unnesting");
@@ -73,7 +73,7 @@ expect(long r)
 {
 	long r1 = Bgetrune(&bin);
 	if (r != r1)
-		sysfatal("unexpected rune %C (%d), wanted %C (%d)", r1, r1, r, r);
+		sysfatal("unexpected rune %C (%ld), wanted %C (%ld)", (Rune) r1, r1, (Rune) r, r);
 }
 
 void parsevalue(void);
@@ -81,7 +81,7 @@ void parsequoted(void);
 
 /* Very similar to parse quoted string, but stores in a buffer. */
 void
-parsekey()
+parsekey(void)
 {
 	Rune *p = key;
 	Rune *e = key+keycap;
@@ -140,7 +140,7 @@ again:
 		return;
 	if (r == ',')
 		goto again;
-	sysfatal("unexpected rune after key-value pair: %C (%d)", r, r);
+	sysfatal("unexpected rune after key-value pair: %C (%ld)", (Rune) r, r);
 }
 
 void
@@ -166,7 +166,7 @@ again:
 		return;
 	if (r == ',')
 		goto again;
-	sysfatal("unexpected rune after array value: %C (%d)", r, r);
+	sysfatal("unexpected rune after array value: %C (%ld)", (Rune) r, r);
 }
 
 void
