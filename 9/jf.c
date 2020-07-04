@@ -18,11 +18,8 @@ void
 pathappend(Rune *s, int i)
 {
 	if (nextpend == pendscap) {
-		int *newpends = malloc(2*pendscap*sizeof(int));
-		memcpy(newpends, pends, pendscap*sizeof(int));
-		free(pends);
-		pends = newpends;
 		pendscap *= 2;
+		pends = realloc(pends, pendscap*sizeof(int));
 	}
 	pends[nextpend++] = pend;
 	int n;
@@ -33,11 +30,8 @@ retry:
 		n = runesnprint(&path[pend], pathcap-pend, "[%d]", i);
 	pend += n;
 	if (pend == pathcap-1) {
-		Rune *newpath = malloc(2*pathcap*sizeof(Rune));
-		memcpy(newpath, path, pend*sizeof(Rune));
-		free(path);
-		path = newpath;
 		pathcap *= 2;
+		path = realloc(path, pathcap*sizeof(Rune));
 		pend -= n;
 		goto retry;
 	}
@@ -89,29 +83,24 @@ parsekey(void)
 	expect('"');
 	*p++ = '"';
 retry:
-	while (p < e) {
+	// -1 because in the body we sometimes read 2 runes, not just one.
+	while(p < e-1){
 		r = Bgetrune(&bin);
 		if (r == Beof)
 			return;
-		if (r == '\\') {
-			*p++ = r;
-			*p++ = Bgetrune(&bin);
-			continue;
-		}
 		*p++ = r;
-		if (r == '"') {
+		if(r == '\\')
+			*p++ = Bgetrune(&bin);
+		else if (r == '"') {
 			*p = 0;
 			return;
 		}
 	}
-	// We've exhausted the space.
-	Rune *newkey = malloc(2*keycap*sizeof(Rune));
-	memcpy(newkey, key, keycap*sizeof(Rune));
-	free(key);
-	key = newkey;
-	p = key + keycap;
+	int off = p - key;
 	keycap *= 2;
-	e = newkey + keycap;
+	key = realloc(key, keycap*sizeof(Rune));
+	p = key + off;
+	e = key + keycap;
 	goto retry;
 }
 
